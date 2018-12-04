@@ -1,20 +1,37 @@
-from bottle import route, request, debug, run, template, static_file
+from bottle import route, request, debug, run, template, static_file, redirect
 import sqlite3, urllib2, datetime, json
 
-places = {'Dublin': [53.3498, -6.2603],
-          'Belfast': [54.5973, -5.9301],
-          'Cork': [51.8969, -8.4863],
-          'Athlone': [53.4239, -7.9407],
-          'Limerick': [52.6680, -8.6305],
-          'Galway': [53.2707, -9.0568],
-          'Waterford': [52.2993, -7.1101],
-          'Donegal': [54.6538, -8.1096],
-          'Armagh': [54.3503, -6.6528],
-          'Derry': [54.9966, -7.3086],
-          'Coleraine': [55.1326, -6.6646],
-          'Tralee': [52.2713, -9.6999],
-          'Sligo': [54.2766, -8.4761]
-          }
+# places = {'Dublin': [53.3498, -6.2603], #use to re add places
+#           'Belfast': [54.5973, -5.9301],
+#           'Cork': [51.8969, -8.4863],
+#           'Athlone': [53.4239, -7.9407],
+#           'Limerick': [52.6680, -8.6305],
+#           'Galway': [53.2707, -9.0568],
+#           'Waterford': [52.2993, -7.1101],
+#           'Donegal': [54.6538, -8.1096],
+#           'Armagh': [54.3503, -6.6528],
+#           'Derry': [54.9966, -7.3086],
+#           'Coleraine': [55.1326, -6.6646],
+#           'Tralee': [52.2713, -9.6999],
+#           'Sligo': [54.2766, -8.4761]
+#           }
+
+places = {}
+
+
+def databasebuilder():
+    global places
+    places = {}
+    connect = sqlite3.connect('forecast.db')
+    cursor = connect.cursor()
+    cursor.execute("SELECT name ,latitude, longitude FROM Locations")
+    locationname = cursor.fetchall()
+    for row in locationname:
+        places[row[0]] = [row[1], row[2]]
+    connect.commit()
+    cursor.close()
+    connect.close()
+    #print places
 
 
 def url_builder(endpoint, lat, lon):
@@ -42,15 +59,6 @@ def time_converter(timestamp):
     return datetime.datetime.fromtimestamp(timestamp).strftime('%d %b %I:%M %p')
 
 
-def makeDropDown():
-    global places
-    selectStr = "<select name ='location'>"
-    for place in places:
-        selectStr = selectStr + "<option value='" + place + "'>" + place + "</option>"
-    selectStr = selectStr + "</select>"
-    return selectStr
-
-
 def convertCoordinates(lat, lon):
     mapWidth, mapHeight = 540, 700
     leftLon, rightLon = -10.663, -5.428
@@ -65,6 +73,7 @@ def convertCoordinates(lat, lon):
 
 def getForecastData():
     global places
+    databasebuilder()
     connect = sqlite3.connect('forecast.db')
     cursor = connect.cursor()
     cursor.execute("DELETE FROM forecasts")
@@ -99,30 +108,38 @@ def getForecastData():
     return mapData, timestampData
 
 
-mapData = []
-forecastData = []
+# mapData = []
+# forecastData = []
 mapData, timestampData = getForecastData()
 
 
 @route('/manage')
 def choosePlace():
-    return template('manage.tpl', selectStr=makeDropDown())
+    global places, timestampData
+    databasebuilder()
+    return template('manage.tpl', places=places, timestampData=timestampData)
     # change back to options.tpl if errors exist
 
 
 @route('/showWeatherMap')
 def choosePlace():
-    return template('showWeatherMap.tpl', selectStr=makeDropDown())
+    return template('showWeatherMap.tpl')
 
 
 @route('/addPlace', method='post')
 def addPlace():
-    global places
+    connect = sqlite3.connect("forecast.db")
+    cursor = connect.cursor()
+
     newPlace = request.forms.get('name')
     latitude = request.forms.get('latitude')
     longitude = request.forms.get('longitude')
-    places[newPlace] = [latitude, longitude]
-    return template('manage.tpl', selectStr=makeDropDown())
+    cursor.execute("INSERT INTO Locations(name, latitude, longitude) Values(?,?,?)",(newPlace, latitude, longitude))
+    connect.commit()
+    cursor.close()
+    connect.close()
+    databasebuilder()
+    redirect("/manage")
 
 
 @route('/images/<ireland>')
@@ -134,16 +151,16 @@ def send_image(ireland):
 @route('/<id>')
 def showMap(id=0):
     global mapData, timestampData
+    databasebuilder()
+    mapData, timestampData = getForecastData()
     id = int(id)
     prev = id - 1 if id > 0 else id
     next = id + 1 if id < len(mapData) - 1 else len(mapData) - 1
-    # print "MAPDATA"
-    # print mapData
-    # print "ID is ", id
-    print mapData[id]
+    # print mapData[id]
     return template('showWeatherMap.tpl', mapData=mapData[id], timestampData=timestampData[id], prev=prev, next=next)
 
 
+databasebuilder()
 mapData, timestampData = getForecastData()
 debug(True)
 run(reloader=True)

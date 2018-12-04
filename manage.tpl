@@ -1,31 +1,15 @@
     <h2> Select Locations to display </h2>
 
-    <form method = 'post' action='/manage'>
-      {{!selectStr}}
-      <input type='submit' value='Choose'>
+    <form>
+        %for place in places:
+            <input type="checkbox" name="checkboxes[]" value="{{place}}" checked/> {{place}}
+            %end
+            <input type='submit' value='Update Availability'>
     </form>
-
-
-        <label class="container">Belfast
-            <input type="checkbox" checked="checked">
-            <span class="checkmark"></span>
-        </label>
-
-        <label class="container">Dublin
-            <input type="checkbox" checked="checked">
-            <span class="checkmark"></span>
-        </label>
-        <label class="container">Cork
-            <input type="checkbox" checked="checked">
-            <span class="checkmark"></span>
-        </label>
-        <br>
-        <input type='submit' value='Update availability'>
-        </br>
     ___________________________________________________________________________________________________________
     <h2> Add a new location </h2>
 
-    <form method='post' action='/'>
+    <form method='post' action='/addPlace'>
         <div>Name <input type='text' name='name'></div>
         <div>Latitude <input type='text'name='latitude'></div>
         <div>Longitude <input type='text' name='longitude'></div>
@@ -36,31 +20,11 @@
     ___________________________________________________________________________________________________________
         <h2> Select maps to display </h2>
 
-    <form method='post' action='/manage'>
-        <label class="container">1st DEC 12:00AM
-            <input type="checkbox" checked="checked">
-            <span class="checkmark"></span>
-        </label>
-        <label class="container">2nd DEC 12:00AM
-            <input type="checkbox" checked="checked">
-            <span class="checkmark"></span>
-        </label>
-        <label class="container">2nd DEC 12:00AM
-            <input type="checkbox" checked="checked">
-            <span class="checkmark"></span>
-        </label>
-        <label class="container">2nd DEC 12:00AM
-            <input type="checkbox" checked="checked">
-            <span class="checkmark"></span>
-        </label>
-        <label class="container">2nd DEC 12:00AM
-            <input type="checkbox" checked="checked">
-            <span class="checkmark"></span>
-        </label>
-        <br>
-        <input type='submit' value='Update Map selection'>
-        </br>
-
+    <form>
+        %for stamp in timestampData:
+            <input type="checkbox" name="checkboxes[]" value="{{stamp}}" checked/> {{stamp}}
+            %end
+                        <input type='submit' value='update map'>
     </form>
 
     ___________________________________________________________________________________________________________
